@@ -1,3 +1,5 @@
+import time
+
 import gym
 import math
 import random
@@ -20,7 +22,7 @@ plt.ion()
 
 device = torch.device("cpu")
 
-Transition = namedtuple('Transition', ('state', 'action', 'next_state'))
+Transition = namedtuple('Transition', ('state', 'action', 'next_state', 'reward'))
 
 
 class ReplayMemory(object):
@@ -47,7 +49,7 @@ class DQN(nn.Module):
         self.layer3 = nn.Linear(128, n_actions)
 
     def forward(self, x):
-        x = F.relu(self.laye1(x))
+        x = F.relu(self.layer1(x))
         x = F.relu(self.layer2(x))
         return self.layer3(x)
 
@@ -82,7 +84,7 @@ def select_action(state):
         with torch.no_grad():
             return policy_net(state).max(1)[1].view(1,1)
     else:
-        return torch.tensor([[env.action_space.sample()]], device=device, dytpe=torch.long)
+        return torch.tensor([[env.action_space.sample()]], device=device, dtype=torch.long)
 
 episode_durations = []
 
@@ -131,10 +133,11 @@ def optimize_model():
     torch.nn.utils.clip_grad_value_(policy_net.parameters(), 100)
     optimizer.step()
 
-num_episodes = 50
+num_episodes = 10
 
 for i_episode in range(num_episodes):
     state, _ = env.reset()
+    env.render()
     state = torch.tensor(state, dtype=torch.float32, device=device).unsqueeze(0)
     for t in count():
         action = select_action(state)
@@ -164,7 +167,8 @@ for i_episode in range(num_episodes):
             plot_durations()
             break
 
+#env.render()
 print('Complete')
 plot_durations(show_result=True)
 plt.ioff()
-plt.show()
+#plt.show()
