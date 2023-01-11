@@ -118,12 +118,47 @@ class Mario():
             return x[0] if isinstance(x, tuple) else x
         state = first_if_tuple(state).__array__()
         next_state = first_if_tuple(next_state).__array__()
-        
 
-        pass
+        state = torch.tensor(state, device=self.device)
+        next_state = torch.tensor(next_state, device=self.device)
+        action = torch.tensor([action], device=self.device)
+        reward = torch.tensor([reward], device=self.device)
+        done = torch.tensor([done], device=self.device)
+
+        self.memory.append((state, next_state, action, reward, done,))
 
     def recall(self):
-        pass
+        batch = random.sample(self.memory, self.batch_size)
+        state, next_state, action, reward, done = map(torch.stack, zip(*batch))
+        return state, next_state, action.squeeze(), reward.squeeze(), done.squeeze()
 
     def learn(self):
         pass
+
+
+class MarioNet(nn.Module):
+    def __init__(self, input_dim, output_dim):
+        super().__init__()
+        c, h, w = input_dim
+
+        self.online = nn.Sequential(
+            nn.Conv2d(in_channels=c, out_channels=32, kernel_size=8, stride=4),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=32, out_channels=64, kernel_size=4, stride=2),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1),
+            nn.ReLU(),
+            nn.Flatten(),
+            nn.Linear(3136, 512),
+            nn.ReLU(),
+            nn.Linear(512, output_dim))
+        self.target = copy.deepcopy(self.online)
+
+        for p in self.target.parameters():
+            p.requires_grad = False
+
+    def forward(self, input, model):
+        if model == "online":
+            return self.online(input)
+        elif model == "target":
+            return self.target(input)
