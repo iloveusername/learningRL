@@ -133,7 +133,7 @@ def optimize_model():
     torch.nn.utils.clip_grad_value_(policy_net.parameters(), 100)
     optimizer.step()
 
-num_episodes = 10
+num_episodes = 1000
 
 for i_episode in range(num_episodes):
     state, _ = env.reset()
@@ -171,4 +171,4 @@ for i_episode in range(num_episodes):
 print('Complete')
 plot_durations(show_result=True)
 plt.ioff()
-#plt.show()
+plt.show()
